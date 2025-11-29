@@ -5,21 +5,31 @@ const CanvasDashboard = () => {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [windowWidth, setWindowWidth] = useState(1024);
+  const [windowHeight, setWindowHeight] = useState(768);
 
   useEffect(() => {
-    setWindowWidth(window.innerWidth);
-    const handleResize = () => setWindowWidth(window.innerWidth);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  // Apply global styles to remove body margin
-  useEffect(() => {
+    // Reset body and html margins/padding to ensure full viewport usage
     document.body.style.margin = '0';
     document.body.style.padding = '0';
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.margin = '0';
+    document.documentElement.style.padding = '0';
+    
+    setWindowWidth(window.innerWidth);
+    setWindowHeight(window.innerHeight);
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+      setWindowHeight(window.innerHeight);
+    };
+    window.addEventListener('resize', handleResize);
     return () => {
+      window.removeEventListener('resize', handleResize);
+      // Restore default body styles when component unmounts
       document.body.style.margin = '';
       document.body.style.padding = '';
+      document.body.style.overflow = '';
+      document.documentElement.style.margin = '';
+      document.documentElement.style.padding = '';
     };
   }, []);
   
@@ -200,159 +210,244 @@ const CanvasDashboard = () => {
     setCurrentPage('course-grades');
   };
 
+  // Responsive breakpoints
+  const isMobile = windowWidth < 768;
+  const isTablet = windowWidth >= 768 && windowWidth < 1024;
+  const isDesktop = windowWidth >= 1024;
+  const isLargeDesktop = windowWidth >= 1400;
+
+  // Sidebar constants - remove automatic behavior
+  const sidebarWidth = '280px';
+
   const renderCourseGradePage = () => {
     const course = courses.find(c => c.id === selectedCourse);
     const grades = courseGrades[selectedCourse];
 
     return (
       <div style={{ 
-        maxWidth: '1920px', 
-        margin: '0 auto',
-        padding: 'clamp(1rem, 2vw, 2rem)'
+        width: '100vw',
+        height: '100vh',
+        padding: 0,
+        margin: 0,
+        paddingLeft: sidebarOpen ? sidebarWidth : '0',
+        paddingTop: '128px', // Account for header height
+        transition: 'padding-left 0.3s ease',
+        overflow: 'auto',
+        backgroundColor: '#F5F5F5',
+        boxSizing: 'border-box'
       }}>
         {/* Course Header */}
         <div style={{
           backgroundColor: 'white',
-          borderRadius: '4px',
-          padding: 'clamp(1rem, 2vw, 1.5rem)',
-          marginBottom: '2rem',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+          borderRadius: '12px',
+          padding: isMobile ? '1.5rem' : '2rem',
+          margin: isMobile ? '1rem 0.5rem' : '1rem 1rem',
+          marginBottom: '1rem',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.06)',
+          border: '1px solid #F1F5F9',
           borderLeft: `4px solid ${course.color}`
         }}>
           <h2 style={{
-            margin: '0 0 0.5rem 0',
-            fontSize: 'clamp(1.25rem, 3vw, 1.5rem)',
-            color: '#2D3B45'
+            margin: '0 0 1rem 0',
+            fontSize: isMobile ? '1.75rem' : 'clamp(2rem, 4vw, 3rem)',
+            color: '#1F2937',
+            fontWeight: '800',
+            letterSpacing: '-0.025em'
           }}>{course.name}</h2>
           <p style={{
-            margin: '0 0 0.5rem 0',
-            color: '#73818F',
-            fontSize: 'clamp(0.75rem, 2vw, 0.875rem)'
+            margin: '0 0 1.5rem 0',
+            color: '#6B7280',
+            fontSize: isMobile ? '1rem' : 'clamp(1rem, 2.5vw, 1.25rem)',
+            fontWeight: '500'
           }}>{course.code} • {course.term}</p>
           <div style={{
             display: 'flex',
-            gap: '1rem',
-            alignItems: 'center',
-            marginTop: '1rem'
+            gap: '2rem',
+            alignItems: 'baseline',
+            marginTop: '1.5rem',
+            flexWrap: 'wrap'
           }}>
             <div>
-              <span style={{ fontSize: 'clamp(1.5rem, 3vw, 2rem)', fontWeight: 'bold', color: course.color }}>
+              <span style={{ 
+                fontSize: isMobile ? '2.5rem' : 'clamp(3rem, 6vw, 4rem)', 
+                fontWeight: '900', 
+                color: course.color,
+                letterSpacing: '-0.025em'
+              }}>
                 {course.currentGrade}
               </span>
-              <span style={{ fontSize: 'clamp(1rem, 2vw, 1.25rem)', color: '#73818F', marginLeft: '0.5rem' }}>
+              <span style={{ 
+                fontSize: isMobile ? '1.5rem' : 'clamp(1.75rem, 3vw, 2.25rem)', 
+                color: '#6B7280', 
+                marginLeft: '1rem',
+                fontWeight: '600'
+              }}>
                 {course.letterGrade}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Assignments Table */}
+        {/* Content Grid - Responsive Layout */}
         <div style={{
-          backgroundColor: 'white',
-          borderRadius: '4px',
-          padding: 'clamp(1rem, 2vw, 1.5rem)',
-          marginBottom: '2rem',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-          overflowX: 'auto'
+          display: 'grid',
+          gridTemplateColumns: isLargeDesktop ? '2fr 1fr' : '1fr',
+          gap: isMobile ? '0' : '1rem',
+          alignItems: 'start',
+          padding: isMobile ? '0 0.5rem' : '0 1rem'
         }}>
-          <h3 style={{
-            margin: '0 0 1rem 0',
-            fontSize: 'clamp(1rem, 2.5vw, 1.25rem)',
-            color: '#2D3B45'
-          }}>Assignments</h3>
-          
-          <table style={{
-            width: '100%',
-            borderCollapse: 'collapse',
-            fontSize: 'clamp(0.75rem, 2vw, 0.875rem)'
+          {/* Assignments Table */}
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: isMobile ? '1.5rem' : '2rem',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.06)',
+            border: '1px solid #F1F5F9',
+            marginBottom: isMobile ? '1rem' : '1.5rem',
+            overflow: 'hidden'
           }}>
-            <thead>
-              <tr style={{ borderBottom: '2px solid #C7CDD1' }}>
-                <th style={{ textAlign: 'left', padding: '0.75rem', color: '#73818F', fontWeight: '600' }}>Name</th>
-                <th style={{ textAlign: 'left', padding: '0.75rem', color: '#73818F', fontWeight: '600' }}>Category</th>
-                <th style={{ textAlign: 'left', padding: '0.75rem', color: '#73818F', fontWeight: '600' }}>Due</th>
-                <th style={{ textAlign: 'right', padding: '0.75rem', color: '#73818F', fontWeight: '600' }}>Score</th>
-                <th style={{ textAlign: 'center', padding: '0.75rem', color: '#73818F', fontWeight: '600' }}>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {grades.assignments.map((assignment, index) => (
-                <tr key={index} style={{ borderBottom: '1px solid #F5F5F5' }}>
-                  <td style={{ padding: '0.75rem', color: '#2D3B45' }}>{assignment.name}</td>
-                  <td style={{ padding: '0.75rem', color: '#73818F' }}>{assignment.category}</td>
-                  <td style={{ padding: '0.75rem', color: '#73818F' }}>{assignment.due}</td>
-                  <td style={{ padding: '0.75rem', textAlign: 'right', color: '#2D3B45', fontWeight: '500' }}>
-                    {assignment.score}
-                  </td>
-                  <td style={{ padding: '0.75rem', textAlign: 'center' }}>
-                    {assignment.status === 'late' && (
-                      <span style={{
-                        backgroundColor: '#FEF3C7',
-                        color: '#92400E',
-                        padding: '0.25rem 0.5rem',
-                        borderRadius: '4px',
-                        fontSize: '0.75rem',
-                        fontWeight: '500'
-                      }}>late</span>
-                    )}
-                    {assignment.status === 'missing' && (
-                      <span style={{
-                        backgroundColor: '#FEE2E2',
-                        color: '#991B1B',
-                        padding: '0.25rem 0.5rem',
-                        borderRadius: '4px',
-                        fontSize: '0.75rem',
-                        fontWeight: '500'
-                      }}>missing</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Grade Summary */}
-        <div style={{
-          backgroundColor: 'white',
-          borderRadius: '4px',
-          padding: 'clamp(1rem, 2vw, 1.5rem)',
-          marginBottom: '2rem',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-        }}>
-          <h3 style={{
-            margin: '0 0 1rem 0',
-            fontSize: 'clamp(1rem, 2.5vw, 1.25rem)',
-            color: '#2D3B45'
-          }}>Grade Summary</h3>
-          
-          {grades.summary.map((item, index) => (
-            <div key={index} style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: '0.75rem 0',
-              borderBottom: index < grades.summary.length - 1 ? '1px solid #F5F5F5' : 'none',
-              fontWeight: item.category === 'Total' ? 'bold' : 'normal',
-              fontSize: item.category === 'Total' ? '1.125rem' : '0.875rem'
-            }}>
-              <span style={{ color: '#2D3B45' }}>{item.category}</span>
-              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                <span style={{ color: '#73818F' }}>{item.score}</span>
-                <span style={{ 
-                  color: item.category === 'Total' ? course.color : '#2D3B45',
-                  minWidth: '60px',
-                  textAlign: 'right'
-                }}>{item.percentage}</span>
-              </div>
+            <h3 style={{
+              margin: '0 0 2rem 0',
+              fontSize: isMobile ? '1.5rem' : 'clamp(1.75rem, 3vw, 2.25rem)',
+              color: '#1F2937',
+              fontWeight: '700',
+              letterSpacing: '-0.025em'
+            }}>Assignments</h3>
+            
+            <div style={{ overflowX: 'auto', width: '100%' }}>
+              <table style={{
+                width: '100%',
+                minWidth: isMobile ? '600px' : '800px',
+                borderCollapse: 'collapse',
+                fontSize: isMobile ? '0.875rem' : 'clamp(0.875rem, 2vw, 1rem)'
+              }}>
+                <thead>
+                  <tr style={{ borderBottom: '3px solid #E5E7EB' }}>
+                    <th style={{ textAlign: 'left', padding: isMobile ? '1rem' : '1.5rem', color: '#6B7280', fontWeight: '600', fontSize: isMobile ? '0.875rem' : '1rem' }}>Name</th>
+                    <th style={{ textAlign: 'left', padding: isMobile ? '1rem' : '1.5rem', color: '#6B7280', fontWeight: '600', fontSize: isMobile ? '0.875rem' : '1rem' }}>Category</th>
+                    <th style={{ textAlign: 'left', padding: isMobile ? '1rem' : '1.5rem', color: '#6B7280', fontWeight: '600', fontSize: isMobile ? '0.875rem' : '1rem' }}>Due</th>
+                    <th style={{ textAlign: 'right', padding: isMobile ? '1rem' : '1.5rem', color: '#6B7280', fontWeight: '600', fontSize: isMobile ? '0.875rem' : '1rem' }}>Score</th>
+                    <th style={{ textAlign: 'center', padding: isMobile ? '1rem' : '1.5rem', color: '#6B7280', fontWeight: '600', fontSize: isMobile ? '0.875rem' : '1rem' }}>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {grades.assignments.map((assignment, index) => (
+                    <tr key={index} style={{ 
+                      borderBottom: '1px solid #F3F4F6',
+                      transition: 'background-color 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F9FAFB'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    >
+                      <td style={{ 
+                        padding: isMobile ? '1rem' : '1.5rem', 
+                        color: '#1F2937', 
+                        fontWeight: '500',
+                        maxWidth: isMobile ? '250px' : 'none',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: isMobile ? 'nowrap' : 'normal',
+                        lineHeight: '1.5'
+                      }}>{assignment.name}</td>
+                      <td style={{ padding: isMobile ? '1rem' : '1.5rem', color: '#6B7280', fontWeight: '500' }}>{assignment.category}</td>
+                      <td style={{ padding: isMobile ? '1rem' : '1.5rem', color: '#6B7280', fontWeight: '500' }}>{assignment.due}</td>
+                      <td style={{ padding: isMobile ? '1rem' : '1.5rem', textAlign: 'right', color: '#1F2937', fontWeight: '600' }}>
+                        {assignment.score}
+                      </td>
+                      <td style={{ padding: isMobile ? '1rem' : '1.5rem', textAlign: 'center' }}>
+                        {assignment.status === 'late' && (
+                          <span style={{
+                            backgroundColor: '#FEF3C7',
+                            color: '#92400E',
+                            padding: '0.5rem 1rem',
+                            borderRadius: '8px',
+                            fontSize: isMobile ? '0.75rem' : '0.875rem',
+                            fontWeight: '600'
+                          }}>late</span>
+                        )}
+                        {assignment.status === 'missing' && (
+                          <span style={{
+                            backgroundColor: '#FEE2E2',
+                            color: '#991B1B',
+                            padding: '0.5rem 1rem',
+                            borderRadius: '8px',
+                            fontSize: isMobile ? '0.75rem' : '0.875rem',
+                            fontWeight: '600'
+                          }}>missing</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          ))}
+          </div>
+
+          {/* Grade Summary */}
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: isMobile ? '1.5rem' : '2rem',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.06)',
+            border: '1px solid #F1F5F9',
+            height: 'fit-content'
+          }}>
+            <h3 style={{
+              margin: '0 0 2rem 0',
+              fontSize: isMobile ? '1.5rem' : 'clamp(1.75rem, 3vw, 2.25rem)',
+              color: '#1F2937',
+              fontWeight: '700',
+              letterSpacing: '-0.025em'
+            }}>Grade Summary</h3>
+            
+            {grades.summary.map((item, index) => (
+              <div key={index} style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '1.25rem 0',
+                borderBottom: index < grades.summary.length - 1 ? '1px solid #F3F4F6' : 
+                  item.category === 'Total' ? '3px solid #E5E7EB' : 'none',
+                fontWeight: item.category === 'Total' ? '700' : '500',
+                fontSize: item.category === 'Total' 
+                  ? (isMobile ? '1.25rem' : 'clamp(1.25rem, 2.5vw, 1.5rem)')
+                  : (isMobile ? '1rem' : 'clamp(1rem, 2vw, 1.125rem)'),
+                backgroundColor: item.category === 'Total' ? '#F9FAFB' : 'transparent',
+                margin: item.category === 'Total' ? '0.5rem -1.5rem 0 -1.5rem' : '0',
+                paddingLeft: item.category === 'Total' ? '1.5rem' : '0',
+                paddingRight: item.category === 'Total' ? '1.5rem' : '0',
+                borderRadius: item.category === 'Total' ? '12px' : '0',
+                marginTop: item.category === 'Total' ? '1rem' : '0'
+              }}>
+                <span style={{ color: '#1F2937' }}>{item.category}</span>
+                <div style={{ 
+                  display: 'flex', 
+                  gap: isMobile ? '1rem' : 'clamp(1rem, 2vw, 1.5rem)', 
+                  alignItems: 'center' 
+                }}>
+                  <span style={{ color: '#6B7280', fontSize: 'inherit' }}>{item.score}</span>
+                  <span style={{ 
+                    color: item.category === 'Total' ? course.color : '#1F2937',
+                    minWidth: isMobile ? '70px' : '80px',
+                    textAlign: 'right',
+                    fontSize: 'inherit',
+                    fontWeight: item.category === 'Total' ? '800' : '600'
+                  }}>{item.percentage}</span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Back Button */}
         <div style={{
-          marginTop: '2rem',
-          textAlign: 'center'
+          backgroundColor: 'white',
+          padding: isMobile ? '1rem' : '1.5rem',
+          margin: isMobile ? '1rem 0.5rem' : '1rem 1rem',
+          borderRadius: '12px',
+          textAlign: 'center',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.06)',
+          border: '1px solid #F1F5F9'
         }}>
           <button 
             onClick={() => {
@@ -360,16 +455,31 @@ const CanvasDashboard = () => {
               setSelectedCourse(null);
             }}
             style={{
-            backgroundColor: 'transparent',
-            border: '1px solid #C7CDD1',
-            borderRadius: '4px',
-            padding: '0.75rem 2rem',
-            fontSize: 'clamp(0.875rem, 2vw, 1rem)',
-            color: '#0374B5',
+            backgroundColor: 'white',
+            border: '2px solid #E5E7EB',
+            borderRadius: '12px',
+            padding: isMobile ? '1rem 2rem' : 'clamp(1rem, 2vw, 1.5rem) clamp(2rem, 4vw, 3rem)',
+            fontSize: isMobile ? '1rem' : 'clamp(1rem, 2.5vw, 1.125rem)',
+            color: course.color,
             cursor: 'pointer',
-            fontWeight: '500',
-            width: windowWidth < 640 ? '100%' : 'auto'
-          }}>
+            fontWeight: '600',
+            width: isMobile ? '100%' : 'auto',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.06)'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = course.color;
+            e.currentTarget.style.color = 'white';
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.boxShadow = `0 8px 25px ${course.color}30`;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'white';
+            e.currentTarget.style.color = course.color;
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.06)';
+          }}
+          >
             ← Back to All Grades
           </button>
         </div>
@@ -379,15 +489,18 @@ const CanvasDashboard = () => {
 
   return (
     <div style={{
-      fontFamily: 'Lato, "Helvetica Neue", Helvetica, Arial, sans-serif',
+      fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
       backgroundColor: '#F5F5F5',
       minHeight: '100vh',
-      width: '100%',
-      overflowX: 'hidden',
+      width: '100vw',
       margin: 0,
-      padding: 0
+      padding: 0,
+      boxSizing: 'border-box',
+      overflow: 'hidden',
+      position: 'relative'
     }}>
-      {sidebarOpen && (
+      {/* Sidebar Overlay */}
+      {sidebarOpen && isMobile && (
         <div
           style={{
             position: 'fixed',
@@ -402,28 +515,31 @@ const CanvasDashboard = () => {
         />
       )}
 
+      {/* Sidebar */}
       <div style={{
         position: 'fixed',
         top: 0,
-        left: sidebarOpen ? 0 : '-280px',
-        width: '280px',
+        left: sidebarOpen ? 0 : `-${sidebarWidth}`,
+        width: sidebarWidth,
         height: '100vh',
-        backgroundColor: '#394B58',
+        backgroundColor: '#1F2937',
         transition: 'left 0.3s ease',
         zIndex: 1000,
-        overflowY: 'auto'
+        overflowY: 'auto',
+        boxShadow: '4px 0 16px rgba(0,0,0,0.1)'
       }}>
         <div style={{
-          padding: '1rem',
+          padding: '1.5rem',
           borderBottom: '1px solid rgba(255,255,255,0.1)'
         }}>
           <div style={{
             backgroundColor: '#0374B5',
-            padding: '0.75rem',
-            borderRadius: '4px',
+            padding: '1rem',
+            borderRadius: '12px',
             color: 'white',
             fontWeight: 'bold',
-            fontSize: '1.25rem'
+            fontSize: '1.5rem',
+            textAlign: 'center'
           }}>Canvas</div>
         </div>
 
@@ -433,7 +549,7 @@ const CanvasDashboard = () => {
             onClick={(e) => {
               e.preventDefault();
               setCurrentPage('dashboard');
-              setSidebarOpen(false);
+              if (isMobile) setSidebarOpen(false);
               setSelectedCourse(null);
             }}
             style={{
@@ -444,10 +560,11 @@ const CanvasDashboard = () => {
             color: 'white',
             textDecoration: 'none',
             borderLeft: currentPage === 'dashboard' ? '4px solid #0374B5' : '4px solid transparent',
-            backgroundColor: currentPage === 'dashboard' ? 'rgba(3, 116, 181, 0.2)' : 'transparent'
+            backgroundColor: currentPage === 'dashboard' ? 'rgba(3, 116, 181, 0.2)' : 'transparent',
+            transition: 'all 0.2s ease'
           }}>
             <span style={{ fontSize: '1.5rem' }}>📊</span>
-            <span>Dashboard</span>
+            <span style={{ fontWeight: '500' }}>Dashboard</span>
           </a>
           
           <a href="#" style={{
@@ -457,36 +574,11 @@ const CanvasDashboard = () => {
             padding: '1rem 1.5rem',
             color: 'white',
             textDecoration: 'none',
-            borderLeft: '4px solid transparent'
+            borderLeft: '4px solid transparent',
+            transition: 'all 0.2s ease'
           }}>
             <span style={{ fontSize: '1.5rem' }}>📚</span>
-            <span>Courses</span>
-          </a>
-
-          <a href="#" style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '1rem',
-            padding: '1rem 1.5rem',
-            color: 'white',
-            textDecoration: 'none',
-            borderLeft: '4px solid transparent'
-          }}>
-            <span style={{ fontSize: '1.5rem' }}>👥</span>
-            <span>Groups</span>
-          </a>
-
-          <a href="#" style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '1rem',
-            padding: '1rem 1.5rem',
-            color: 'white',
-            textDecoration: 'none',
-            borderLeft: '4px solid transparent'
-          }}>
-            <span style={{ fontSize: '1.5rem' }}>📅</span>
-            <span>Calendar</span>
+            <span style={{ fontWeight: '500' }}>Courses</span>
           </a>
 
           <a href="#" style={{
@@ -497,14 +589,43 @@ const CanvasDashboard = () => {
             color: 'white',
             textDecoration: 'none',
             borderLeft: '4px solid transparent',
-            position: 'relative'
+            transition: 'all 0.2s ease'
+          }}>
+            <span style={{ fontSize: '1.5rem' }}>👥</span>
+            <span style={{ fontWeight: '500' }}>Groups</span>
+          </a>
+
+          <a href="#" style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '1rem',
+            padding: '1rem 1.5rem',
+            color: 'white',
+            textDecoration: 'none',
+            borderLeft: '4px solid transparent',
+            transition: 'all 0.2s ease'
+          }}>
+            <span style={{ fontSize: '1.5rem' }}>📅</span>
+            <span style={{ fontWeight: '500' }}>Calendar</span>
+          </a>
+
+          <a href="#" style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '1rem',
+            padding: '1rem 1.5rem',
+            color: 'white',
+            textDecoration: 'none',
+            borderLeft: '4px solid transparent',
+            position: 'relative',
+            transition: 'all 0.2s ease'
           }}>
             <span style={{ fontSize: '1.5rem' }}>✉️</span>
-            <span>Inbox</span>
+            <span style={{ fontWeight: '500' }}>Inbox</span>
             <span style={{
               backgroundColor: '#E62429',
               color: 'white',
-              borderRadius: '10px',
+              borderRadius: '12px',
               padding: '2px 8px',
               fontSize: '0.75rem',
               fontWeight: 'bold',
@@ -519,10 +640,11 @@ const CanvasDashboard = () => {
             padding: '1rem 1.5rem',
             color: 'white',
             textDecoration: 'none',
-            borderLeft: '4px solid transparent'
+            borderLeft: '4px solid transparent',
+            transition: 'all 0.2s ease'
           }}>
             <span style={{ fontSize: '1.5rem' }}>⏰</span>
-            <span>History</span>
+            <span style={{ fontWeight: '500' }}>History</span>
           </a>
 
           <a href="#" style={{
@@ -532,26 +654,33 @@ const CanvasDashboard = () => {
             padding: '1rem 1.5rem',
             color: 'white',
             textDecoration: 'none',
-            borderLeft: '4px solid transparent'
+            borderLeft: '4px solid transparent',
+            transition: 'all 0.2s ease'
           }}>
             <span style={{ fontSize: '1.5rem' }}>❓</span>
-            <span>Help</span>
+            <span style={{ fontWeight: '500' }}>Help</span>
           </a>
         </nav>
       </div>
 
+      {/* Top Header */}
       <div style={{
-        backgroundColor: '#394B58',
+        backgroundColor: '#1F2937',
         color: 'white',
         padding: '0',
-        position: 'sticky',
+        position: 'fixed',
         top: 0,
-        zIndex: 100
+        left: 0,
+        right: 0,
+        width: '100vw',
+        zIndex: 100,
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
       }}>
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          height: '50px'
+          height: '64px',
+          paddingLeft: sidebarOpen && !isMobile ? sidebarWidth : '0'
         }}>
           <button 
             onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -559,56 +688,74 @@ const CanvasDashboard = () => {
             backgroundColor: 'transparent',
             border: 'none',
             color: 'white',
-            padding: '0 1rem',
+            padding: '0 1.5rem',
             height: '100%',
             cursor: 'pointer',
-            fontSize: '1.25rem'
-          }}>☰</button>
-          <div style={{
-            backgroundColor: '#0374B5',
-            padding: '0.5rem 1rem',
-            fontWeight: 'bold',
-            marginRight: 'auto'
-          }}>Canvas</div>
+            fontSize: '1.5rem',
+            transition: 'background-color 0.2s ease'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)'}
+          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+          >☰</button>
+          {!sidebarOpen && (
+            <div style={{
+              backgroundColor: '#0374B5',
+              padding: '0.5rem 1rem',
+              fontWeight: 'bold',
+              marginRight: 'auto',
+              fontSize: '1.25rem'
+            }}>Canvas</div>
+          )}
           <div style={{
             display: 'flex',
             alignItems: 'center',
             gap: '0.5rem',
-            paddingRight: '1rem'
+            paddingRight: '1.5rem',
+            marginLeft: 'auto'
           }}>
             <button style={{
               backgroundColor: 'transparent',
               border: 'none',
               color: 'white',
               cursor: 'pointer',
-              fontSize: '1rem',
-              padding: '0.5rem'
-            }}>👤</button>
+              fontSize: '1.25rem',
+              padding: '0.75rem',
+              borderRadius: '8px',
+              transition: 'background-color 0.2s ease'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.1)'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+            >👤</button>
           </div>
         </div>
       </div>
 
+      {/* Page Header */}
       <div style={{
         backgroundColor: 'white',
-        borderBottom: '1px solid #C7CDD1',
+        borderBottom: '1px solid #E5E7EB',
         padding: '1rem',
-        position: 'sticky',
-        top: '50px',
-        zIndex: 90
+        position: 'fixed',
+        top: '64px',
+        left: 0,
+        right: 0,
+        zIndex: 90,
+        paddingLeft: sidebarOpen && !isMobile ? `calc(${sidebarWidth} + 1rem)` : '1rem',
+        transition: 'padding-left 0.3s ease'
       }}>
         <div style={{ 
-          maxWidth: '1920px', 
-          margin: '0 auto',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
           flexWrap: 'wrap',
-          gap: '0.5rem'
+          gap: '1rem'
         }}>
           <h1 style={{ 
             margin: 0, 
-            fontSize: 'clamp(1.25rem, 4vw, 1.75rem)', 
-            color: '#2D3B45' 
+            fontSize: isMobile ? '1.75rem' : 'clamp(2rem, 4vw, 2.5rem)', 
+            color: '#1F2937',
+            fontWeight: '800',
+            letterSpacing: '-0.025em'
           }}>
             {currentPage === 'dashboard' ? 'Dashboard' : 
              currentPage === 'grades' ? 'Grades' : 
@@ -617,15 +764,26 @@ const CanvasDashboard = () => {
           {currentPage === 'dashboard' && (
             <button style={{
               backgroundColor: 'transparent',
-              border: '1px solid #C7CDD1',
-              borderRadius: '4px',
-              padding: '0.5rem 1rem',
+              border: '2px solid #E5E7EB',
+              borderRadius: '12px',
+              padding: '0.75rem 1.5rem',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               gap: '0.5rem',
-              fontSize: 'clamp(0.75rem, 2vw, 1rem)'
-            }}>
+              fontSize: '1rem',
+              fontWeight: '500',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#F3F4F6';
+              e.currentTarget.style.borderColor = '#D1D5DB';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+              e.currentTarget.style.borderColor = '#E5E7EB';
+            }}
+            >
               <span>⋮</span>
               <span>Dashboard Options</span>
             </button>
@@ -634,319 +792,251 @@ const CanvasDashboard = () => {
       </div>
 
       {currentPage === 'dashboard' ? (
-        <>
         <div style={{ 
-          maxWidth: '1920px', 
-          margin: '0 auto',
-          padding: 'clamp(1rem, 2vw, 2rem)',
-          display: 'grid',
-          gridTemplateColumns: windowWidth >= 1024 ? '1fr 340px' : '1fr',
-          gap: 'clamp(1rem, 2vw, 2rem)'
+          width: '100vw',
+          height: '100vh',
+          padding: 0,
+          margin: 0,
+          paddingLeft: sidebarOpen ? sidebarWidth : '0',
+          paddingTop: '128px', // Account for header height
+          transition: 'padding-left 0.3s ease',
+          overflow: 'auto',
+          boxSizing: 'border-box'
         }}>
-        <div>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: windowWidth >= 1400 ? 'repeat(3, 1fr)' : 
-                               windowWidth >= 768 ? 'repeat(2, 1fr)' : '1fr',
-            gap: 'clamp(1rem, 1.5vw, 1.5rem)'
-          }}>
-            {courses.map(course => (
-              <div
-                key={course.id}
-                style={{
-                  backgroundColor: 'white',
-                  borderRadius: '8px',
-                  overflow: 'hidden',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                  transition: 'all 0.2s',
-                  cursor: 'pointer'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-4px)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
-                }}>
-                <div style={{
-                  backgroundColor: course.color,
-                  height: '120px',
-                  padding: '1rem',
-                  position: 'relative',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'flex-end'
-                }}>
-                  <button style={{
-                    position: 'absolute',
-                    top: '0.5rem',
-                    right: '0.5rem',
-                    backgroundColor: 'rgba(255,255,255,0.9)',
-                    border: 'none',
-                    borderRadius: '4px',
-                    width: '32px',
-                    height: '32px',
-                    cursor: 'pointer',
-                    fontSize: '1.25rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>⋮</button>
-                  <h3 style={{
-                    margin: 0,
-                    color: 'white',
-                    fontSize: '1.125rem',
-                    fontWeight: 'bold'
-                  }}>{course.name}</h3>
-                  <p style={{
-                    margin: '0.25rem 0 0 0',
-                    color: 'rgba(255,255,255,0.9)',
-                    fontSize: '0.875rem'
-                  }}>{course.code}</p>
-                  <p style={{
-                    margin: '0.125rem 0 0 0',
-                    color: 'rgba(255,255,255,0.9)',
-                    fontSize: '0.75rem'
-                  }}>{course.term}</p>
-                </div>
-
-                <div style={{
-                  display: 'flex',
-                  borderTop: '1px solid #C7CDD1'
-                }}>
-                  <button style={{
-                    flex: 1,
-                    border: 'none',
-                    borderRight: '1px solid #C7CDD1',
-                    backgroundColor: 'white',
-                    padding: '1rem',
-                    cursor: 'pointer',
-                    position: 'relative',
-                    fontSize: '1.25rem'
-                  }}>
-                    📢
-                    {course.unreadAnnouncements > 0 && (
-                      <span style={{
-                        position: 'absolute',
-                        top: '0.5rem',
-                        right: '0.5rem',
-                        backgroundColor: '#E62429',
-                        color: 'white',
-                        borderRadius: '10px',
-                        padding: '2px 6px',
-                        fontSize: '0.75rem',
-                        fontWeight: 'bold'
-                      }}>{course.unreadAnnouncements}</span>
-                    )}
-                  </button>
-                  <button style={{
-                    flex: 1,
-                    border: 'none',
-                    borderRight: '1px solid #C7CDD1',
-                    backgroundColor: 'white',
-                    padding: '1rem',
-                    cursor: 'pointer',
-                    fontSize: '1.25rem'
-                  }}>📝</button>
-                  <button 
-                    onClick={() => handleCourseClick(course.id)}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: isMobile 
+                ? '1fr' 
+                : isTablet 
+                  ? 'repeat(2, 1fr)' 
+                  : isDesktop 
+                    ? 'repeat(3, 1fr)'
+                    : 'repeat(4, 1fr)',
+              gap: isMobile ? '0' : '1rem',
+              padding: isMobile ? '1rem' : '1.5rem',
+              margin: isMobile ? '0 0.5rem' : '0 1rem'
+            }}>
+                {courses.map(course => (
+                  <div
+                    key={course.id}
                     style={{
-                    flex: 1,
-                    border: 'none',
-                    backgroundColor: 'white',
-                    padding: '1rem',
-                    cursor: 'pointer',
-                    fontSize: '1.25rem'
-                  }}>📊</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div style={{
-          display: windowWidth >= 1024 ? 'block' : 'none'
-        }}>
-          <div style={{
-            backgroundColor: 'white',
-            borderRadius: '4px',
-            padding: '1rem',
-            marginBottom: '1rem',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-          }}>
-            <h2 style={{
-              margin: '0 0 1rem 0',
-              fontSize: '1.25rem',
-              color: '#2D3B45',
-              fontWeight: 'bold'
-            }}>To Do</h2>
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-              {todos.map(todo => (
-                <li key={todo.id} style={{
-                  padding: '0.75rem 0',
-                  borderBottom: '1px solid #F5F5F5',
-                  display: 'flex',
-                  gap: '0.75rem',
-                  alignItems: 'start'
-                }}>
-                  <span style={{ fontSize: '1.25rem', marginTop: '0.25rem' }}>
-                    {todo.type === 'assignment' ? '📝' : todo.type === 'announcement' ? '📢' : '💬'}
-                  </span>
-                  <div style={{ flex: 1 }}>
-                    <a href="#" style={{
-                      color: '#0374B5',
-                      textDecoration: 'none',
-                      fontWeight: '500',
-                      fontSize: '0.875rem',
-                      display: 'block',
-                      marginBottom: '0.25rem'
-                    }}>{todo.title}</a>
-                    <p style={{
-                      margin: '0 0 0.25rem 0',
-                      fontSize: '0.75rem',
-                      color: '#73818F'
-                    }}>{todo.course}</p>
-                    <p style={{
-                      margin: 0,
-                      fontSize: '0.75rem',
-                      color: '#73818F'
+                      backgroundColor: 'white',
+                      borderRadius: '12px',
+                      overflow: 'hidden',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.06)',
+                      border: '1px solid #F1F5F9',
+                      marginBottom: isMobile ? '1rem' : '1.5rem',
+                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      cursor: 'pointer'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-4px)';
+                      e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.1), 0 3px 10px rgba(0,0,0,0.08)';
+                      e.currentTarget.style.borderColor = '#E2E8F0';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.06)';
+                      e.currentTarget.style.borderColor = '#F1F5F9';
                     }}>
-                      {todo.points && `${todo.points} points • `}{todo.dueDate}
-                    </p>
-                  </div>
-                  <button style={{
-                    backgroundColor: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontSize: '1.25rem',
-                    color: '#73818F',
-                    padding: 0
-                  }}>×</button>
-                </li>
-              ))}
-            </ul>
-            <button style={{
-              backgroundColor: 'transparent',
-              border: 'none',
-              color: '#0374B5',
-              cursor: 'pointer',
-              padding: '0.75rem 0',
-              fontSize: '0.875rem',
-              width: '100%',
-              textAlign: 'left'
-            }}>Show All</button>
-          </div>
+                    <div style={{
+                      background: `linear-gradient(135deg, ${course.color}, ${course.color}dd)`,
+                      height: '140px',
+                      padding: '1.5rem',
+                      position: 'relative',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'flex-end'
+                    }}>
+                      <button style={{
+                        position: 'absolute',
+                        top: '1rem',
+                        right: '1rem',
+                        backgroundColor: 'rgba(255,255,255,0.9)',
+                        border: 'none',
+                        borderRadius: '8px',
+                        width: '36px',
+                        height: '36px',
+                        cursor: 'pointer',
+                        fontSize: '1.25rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'background-color 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'white'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.9)'}
+                      >⋮</button>
+                      <h3 style={{
+                        margin: 0,
+                        color: 'white',
+                        fontSize: '1.25rem',
+                        fontWeight: 'bold',
+                        lineHeight: '1.3'
+                      }}>{course.name}</h3>
+                      <p style={{
+                        margin: '0.5rem 0 0 0',
+                        color: 'rgba(255,255,255,0.9)',
+                        fontSize: '0.875rem',
+                        fontWeight: '500'
+                      }}>{course.code}</p>
+                      <p style={{
+                        margin: '0.25rem 0 0 0',
+                        color: 'rgba(255,255,255,0.8)',
+                        fontSize: '0.75rem'
+                      }}>{course.term}</p>
+                    </div>
 
+                    <div style={{
+                      display: 'flex',
+                      borderTop: '1px solid #E5E7EB'
+                    }}>
+                      <button style={{
+                        flex: 1,
+                        border: 'none',
+                        borderRight: '1px solid #E5E7EB',
+                        backgroundColor: 'white',
+                        padding: '1rem',
+                        cursor: 'pointer',
+                        position: 'relative',
+                        fontSize: '1.25rem',
+                        transition: 'background-color 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F9FAFB'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+                      >
+                        📢
+                        {course.unreadAnnouncements > 0 && (
+                          <span style={{
+                            position: 'absolute',
+                            top: '0.5rem',
+                            right: '0.5rem',
+                            backgroundColor: '#E62429',
+                            color: 'white',
+                            borderRadius: '12px',
+                            padding: '2px 6px',
+                            fontSize: '0.75rem',
+                            fontWeight: 'bold'
+                          }}>{course.unreadAnnouncements}</span>
+                        )}
+                      </button>
+                      <button style={{
+                        flex: 1,
+                        border: 'none',
+                        borderRight: '1px solid #E5E7EB',
+                        backgroundColor: 'white',
+                        padding: '1rem',
+                        cursor: 'pointer',
+                        fontSize: '1.25rem',
+                        transition: 'background-color 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F9FAFB'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+                      >📝</button>
+                      <button 
+                        onClick={() => handleCourseClick(course.id)}
+                        style={{
+                        flex: 1,
+                        border: 'none',
+                        backgroundColor: 'white',
+                        padding: '1rem',
+                        cursor: 'pointer',
+                        fontSize: '1.25rem',
+                        transition: 'background-color 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F9FAFB'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+                      >📊</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+          {/* View Grades Button */}
           <div style={{
             backgroundColor: 'white',
-            borderRadius: '4px',
-            padding: '1rem',
+            padding: isMobile ? '1rem' : '1.5rem',
+            margin: isMobile ? '0 0.5rem' : '0 1rem',
+            borderRadius: '12px',
+            marginTop: '1rem',
             marginBottom: '1rem',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+            boxShadow: '0 2px 8px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.06)'
           }}>
-            <h2 style={{
-              margin: '0 0 1rem 0',
-              fontSize: '1.25rem',
-              color: '#2D3B45',
-              fontWeight: 'bold'
-            }}>Recent Feedback</h2>
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-              {recentFeedback.map((feedback, index) => (
-                <li key={index} style={{
-                  padding: '0.75rem 0',
-                  borderBottom: index < recentFeedback.length - 1 ? '1px solid #F5F5F5' : 'none'
-                }}>
-                  <a href="#" style={{
-                    color: '#0374B5',
-                    textDecoration: 'none',
-                    fontWeight: '500',
-                    fontSize: '0.875rem',
-                    display: 'block',
-                    marginBottom: '0.25rem'
-                  }}>{feedback.assignment}</a>
-                  <p style={{
-                    margin: '0 0 0.25rem 0',
-                    fontSize: '0.75rem',
-                    color: '#73818F'
-                  }}>{feedback.course}</p>
-                  <p style={{
-                    margin: 0,
-                    fontSize: '0.875rem',
-                    color: '#2D3B45',
-                    fontWeight: 'bold'
-                  }}>{feedback.grade}</p>
-                  <p style={{
-                    margin: '0.25rem 0 0 0',
-                    fontSize: '0.75rem',
-                    color: '#73818F',
-                    fontStyle: 'italic'
-                  }}>"{feedback.comment}"</p>
-                </li>
-              ))}
-            </ul>
+            <button 
+              onClick={() => setCurrentPage('grades')}
+              style={{
+                width: '100%',
+                padding: isMobile ? '1.25rem' : 'clamp(1.25rem, 2vw, 1.5rem)',
+                backgroundColor: '#0374B5',
+                color: 'white',
+                border: 'none',
+                borderRadius: '12px',
+                fontSize: isMobile ? '1.125rem' : 'clamp(1.125rem, 2vw, 1.25rem)',
+                fontWeight: '600',
+                cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(3, 116, 181, 0.3)',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#025a8f';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 8px 25px rgba(3, 116, 181, 0.4)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#0374B5';
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(3, 116, 181, 0.3)';
+              }}
+            >
+              View Grades
+            </button>
           </div>
         </div>
-      </div>
-      
-      <div style={{
-        maxWidth: '1920px',
-        margin: '2rem auto',
-        padding: '0 clamp(1rem, 2vw, 2rem)'
-      }}>
-        <button 
-          onClick={() => setCurrentPage('grades')}
-          style={{
-            width: '100%',
-            padding: '1rem',
-            backgroundColor: '#0374B5',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            fontSize: '1rem',
-            fontWeight: '500',
-            cursor: 'pointer',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-            transition: 'background-color 0.2s'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#025a8f'}
-          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0374B5'}
-        >
-          View Grades
-        </button>
-      </div>
-      </>
       ) : currentPage === 'course-grades' ? (
         renderCourseGradePage()
       ) : (
+        // All Grades Page
         <div style={{ 
-          maxWidth: '1920px', 
-          margin: '0 auto',
-          padding: 'clamp(1rem, 2vw, 2rem)'
+          width: '100vw',
+          height: '100vh',
+          padding: 0,
+          margin: 0,
+          paddingLeft: sidebarOpen ? sidebarWidth : '0',
+          paddingTop: '128px', // Account for header height
+          transition: 'padding-left 0.3s ease',
+          overflow: 'auto',
+          boxSizing: 'border-box'
         }}>
+          {/* Page Header */}
           <div style={{
             backgroundColor: 'white',
-            borderRadius: '4px',
-            padding: 'clamp(1rem, 2vw, 1.5rem)',
-            marginBottom: '2rem',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+            borderRadius: '12px',
+            padding: isMobile ? '1.5rem' : '2rem',
+            margin: isMobile ? '1rem 0.5rem' : '1rem 1rem',
+            marginBottom: '1rem',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.06)',
+            border: '1px solid #F1F5F9'
           }}>
             <h2 style={{
               margin: '0 0 0.5rem 0',
-              fontSize: 'clamp(1.25rem, 3vw, 1.5rem)',
-              color: '#2D3B45'
+              fontSize: isMobile ? '1.75rem' : 'clamp(1.75rem, 3vw, 2.25rem)',
+              color: '#1F2937',
+              fontWeight: '800',
+              letterSpacing: '-0.025em'
             }}>All Grades</h2>
             <p style={{
               margin: 0,
-              color: '#73818F',
-              fontSize: 'clamp(0.75rem, 2vw, 0.875rem)'
+              color: '#6B7280',
+              fontSize: isMobile ? '1rem' : 'clamp(1rem, 2vw, 1.125rem)'
             }}>View your current grades for all courses</p>
           </div>
 
+          {/* Course Grade Cards */}
           <div style={{
             display: 'flex',
             flexDirection: 'column',
-            gap: '1rem'
+            gap: '0',
+            padding: isMobile ? '0 0.5rem' : '0 1rem'
           }}>
             {courses.map(course => (
               <div 
@@ -954,101 +1044,135 @@ const CanvasDashboard = () => {
                 onClick={() => handleCourseClick(course.id)}
                 style={{
                 backgroundColor: 'white',
-                borderRadius: '4px',
-                padding: 'clamp(1rem, 2vw, 1.5rem)',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                borderRadius: '12px',
+                padding: isMobile ? '1.5rem' : '2rem',
+                marginBottom: isMobile ? '1rem' : '1.5rem',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.06)',
+                border: '1px solid #F1F5F9',
                 display: 'flex',
-                flexWrap: windowWidth < 640 ? 'wrap' : 'nowrap',
+                flexWrap: isMobile ? 'wrap' : 'nowrap',
                 alignItems: 'center',
-                gap: 'clamp(0.75rem, 2vw, 1.5rem)',
+                gap: isMobile ? '1rem' : '1.5rem',
                 cursor: 'pointer',
-                transition: 'all 0.2s'
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+                e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.1), 0 3px 10px rgba(0,0,0,0.08)';
+                e.currentTarget.style.transform = 'translateY(-4px)';
+                e.currentTarget.style.borderColor = '#E2E8F0';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.06)';
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.borderColor = '#F1F5F9';
               }}>
+                {/* Color Indicator */}
                 <div style={{
-                  width: windowWidth < 640 ? '100%' : '8px',
-                  height: windowWidth < 640 ? '4px' : '80px',
+                  width: isMobile ? '100%' : '8px',
+                  height: isMobile ? '6px' : '100px',
                   backgroundColor: course.color,
-                  borderRadius: '4px',
+                  borderRadius: '8px',
                   flexShrink: 0
                 }}></div>
 
+                {/* Course Info */}
                 <div style={{ 
                   flex: 1,
-                  minWidth: windowWidth < 640 ? '100%' : 0
+                  minWidth: isMobile ? '100%' : 0
                 }}>
                   <h3 style={{
-                    margin: '0 0 0.25rem 0',
-                    fontSize: 'clamp(1rem, 2.5vw, 1.25rem)',
-                    color: '#2D3B45',
-                    fontWeight: 'bold'
+                    margin: '0 0 0.5rem 0',
+                    fontSize: isMobile ? '1.25rem' : 'clamp(1.25rem, 2.5vw, 1.5rem)',
+                    color: '#1F2937',
+                    fontWeight: 'bold',
+                    lineHeight: '1.3'
                   }}>{course.name}</h3>
                   <p style={{
                     margin: '0 0 0.25rem 0',
-                    fontSize: 'clamp(0.75rem, 2vw, 0.875rem)',
-                    color: '#73818F'
+                    fontSize: isMobile ? '0.875rem' : 'clamp(0.875rem, 2vw, 1rem)',
+                    color: '#6B7280',
+                    fontWeight: '500'
                   }}>{course.code}</p>
                   <p style={{
                     margin: 0,
-                    fontSize: 'clamp(0.7rem, 1.5vw, 0.75rem)',
-                    color: '#73818F'
+                    fontSize: isMobile ? '0.75rem' : 'clamp(0.75rem, 1.5vw, 0.875rem)',
+                    color: '#9CA3AF'
                   }}>{course.term}</p>
                 </div>
 
+                {/* Grade Display */}
                 <div style={{
                   textAlign: 'right',
-                  minWidth: windowWidth < 640 ? 'auto' : '100px',
+                  minWidth: isMobile ? 'auto' : '160px',
                   flexShrink: 0,
                   display: 'flex',
-                  flexDirection: windowWidth < 640 ? 'row' : 'column',
-                  alignItems: windowWidth < 640 ? 'center' : 'flex-end',
-                  gap: windowWidth < 640 ? '0.5rem' : '0'
+                  flexDirection: isMobile ? 'row' : 'column',
+                  alignItems: isMobile ? 'center' : 'flex-end',
+                  gap: isMobile ? '1rem' : '0.5rem',
+                  paddingRight: '0.5rem'
                 }}>
                   <div style={{
-                    fontSize: 'clamp(1.5rem, 4vw, 2rem)',
+                    fontSize: isMobile ? '2rem' : 'clamp(1.75rem, 3vw, 2.25rem)',
                     fontWeight: 'bold',
-                    color: '#2D3B45',
+                    color: '#1F2937',
                     lineHeight: 1
                   }}>{course.currentGrade}</div>
                   <div style={{
-                    fontSize: 'clamp(1rem, 2.5vw, 1.25rem)',
-                    color: '#73818F',
-                    marginTop: windowWidth < 640 ? '0' : '0.25rem'
+                    fontSize: isMobile ? '1.25rem' : 'clamp(1.125rem, 2vw, 1.375rem)',
+                    color: '#6B7280',
+                    fontWeight: '600'
                   }}>{course.letterGrade}</div>
                 </div>
 
+                {/* Arrow */}
                 <div style={{
                   fontSize: '1.5rem',
-                  color: '#C7CDD1',
+                  color: '#D1D5DB',
                   flexShrink: 0,
-                  display: windowWidth < 640 ? 'none' : 'block'
-                }}>›</div>
+                  display: isMobile ? 'none' : 'block'
+                }}>→</div>
               </div>
             ))}
           </div>
 
+          {/* Back Button */}
           <div style={{
-            marginTop: '2rem',
-            textAlign: 'center'
+            backgroundColor: 'white',
+            padding: isMobile ? '1rem' : '1.5rem',
+            margin: isMobile ? '1rem 0.5rem' : '1rem 1rem',
+            borderRadius: '12px',
+            textAlign: 'center',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.06)',
+            border: '1px solid #F1F5F9'
           }}>
             <button 
               onClick={() => setCurrentPage('dashboard')}
               style={{
-              backgroundColor: 'transparent',
-              border: '1px solid #C7CDD1',
-              borderRadius: '4px',
-              padding: '0.75rem 2rem',
-              fontSize: 'clamp(0.875rem, 2vw, 1rem)',
+              backgroundColor: 'white',
+              border: '2px solid #E5E7EB',
+              borderRadius: '12px',
+              padding: isMobile ? '1rem 2rem' : 'clamp(1rem, 2vw, 1.25rem) clamp(2rem, 4vw, 3rem)',
+              fontSize: isMobile ? '1rem' : 'clamp(1rem, 2.5vw, 1.125rem)',
               color: '#0374B5',
               cursor: 'pointer',
-              fontWeight: '500',
-              width: windowWidth < 640 ? '100%' : 'auto'
-            }}>
+              fontWeight: '600',
+              width: isMobile ? '100%' : 'auto',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.06)'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#0374B5';
+              e.currentTarget.style.color = 'white';
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 8px 25px rgba(3, 116, 181, 0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'white';
+              e.currentTarget.style.color = '#0374B5';
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.06)';
+            }}
+            >
               ← Back to Dashboard
             </button>
           </div>
