@@ -3,5 +3,5 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
 plugins: [react()],
-base: '/cs3870_frontend/' // repo name between slashes
+base: '/canvas/' // repo name between slashes
 })
